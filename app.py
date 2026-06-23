@@ -25,13 +25,16 @@ def load_scaler():
     return joblib.load("scaler.pkl")
 
 # ─────────────────────────────────────────────
-# FEATURE ORDER — harus sama persis dengan X saat training
-# df_fs.drop('churn', axis=1) setelah drop customer_id, gender,
-# signup_date, last_purchase_date dan tambah customer_age_days,
-# days_since_last_purchase
+# FEATURE ORDER — diambil langsung dari scaler.feature_names_in_
+# 27 fitur, urutan HARUS sama persis
 # ─────────────────────────────────────────────
 FEATURE_COLUMNS = [
     "age",
+    "country",
+    "city",
+    "acquisition_channel",
+    "device_type",
+    "subscription_type",
     "is_premium_user",
     "total_visits",
     "avg_session_time",
@@ -41,9 +44,11 @@ FEATURE_COLUMNS = [
     "total_spent",
     "avg_order_value",
     "discount_used",
+    "coupon_code",
     "support_tickets",
     "refund_requested",
     "delivery_delay_days",
+    "payment_method",
     "satisfaction_score",
     "nps_score",
     "marketing_spend_per_user",
@@ -54,27 +59,44 @@ FEATURE_COLUMNS = [
 ]
 
 FEATURE_INFO = {
-    "age":                      "Usia pelanggan (tahun)",
-    "is_premium_user":          "Apakah pelanggan adalah pengguna premium (0 = Tidak, 1 = Ya)",
-    "total_visits":             "Total kunjungan pelanggan ke platform",
-    "avg_session_time":         "Rata-rata durasi sesi pelanggan (menit)",
-    "pages_per_session":        "Rata-rata halaman yang dikunjungi per sesi",
-    "email_open_rate":          "Tingkat pembukaan email marketing (0.0 - 1.0)",
-    "email_click_rate":         "Tingkat klik email marketing (0.0 - 1.0)",
-    "total_spent":              "Total pengeluaran pelanggan (USD)",
-    "avg_order_value":          "Rata-rata nilai pesanan pelanggan (USD)",
-    "discount_used":            "Jumlah diskon yang digunakan pelanggan",
-    "support_tickets":          "Jumlah tiket support yang dibuka pelanggan",
-    "refund_requested":         "Jumlah permintaan refund yang dilakukan pelanggan",
-    "delivery_delay_days":      "Rata-rata keterlambatan pengiriman (hari)",
-    "satisfaction_score":       "Skor kepuasan pelanggan (1 - 5)",
-    "nps_score":                "Net Promoter Score pelanggan (-100 hingga 100)",
-    "marketing_spend_per_user": "Pengeluaran marketing per pelanggan (USD)",
-    "lifetime_value":           "Nilai seumur hidup pelanggan / LTV (USD)",
-    "last_3_month_purchase_freq": "Frekuensi pembelian dalam 3 bulan terakhir",
-    "customer_age_days":        "Lama pelanggan terdaftar sejak signup (hari)",
-    "days_since_last_purchase": "Jumlah hari sejak pembelian terakhir",
+    "age":                       "Usia pelanggan (tahun)",
+    "country":                   "Negara pelanggan (encoded)",
+    "city":                      "Kota pelanggan (encoded)",
+    "acquisition_channel":       "Saluran akuisisi pelanggan (encoded)",
+    "device_type":               "Tipe perangkat yang digunakan (encoded)",
+    "subscription_type":         "Tipe langganan pelanggan (encoded)",
+    "is_premium_user":           "Status premium pelanggan (0=Tidak, 1=Ya)",
+    "total_visits":              "Total kunjungan ke platform",
+    "avg_session_time":          "Rata-rata durasi sesi (menit)",
+    "pages_per_session":         "Rata-rata halaman per sesi",
+    "email_open_rate":           "Tingkat pembukaan email (0.0 - 1.0)",
+    "email_click_rate":          "Tingkat klik email (0.0 - 1.0)",
+    "total_spent":               "Total pengeluaran pelanggan (USD)",
+    "avg_order_value":           "Rata-rata nilai pesanan (USD)",
+    "discount_used":             "Penggunaan diskon (0=Tidak, 1=Ya)",
+    "coupon_code":               "Kode kupon yang digunakan (encoded)",
+    "support_tickets":           "Jumlah tiket support yang dibuka",
+    "refund_requested":          "Permintaan refund (0=Tidak, 1=Ya)",
+    "delivery_delay_days":       "Rata-rata keterlambatan pengiriman (hari)",
+    "payment_method":            "Metode pembayaran (encoded)",
+    "satisfaction_score":        "Skor kepuasan pelanggan (1 - 5)",
+    "nps_score":                 "Net Promoter Score (1 - 10)",
+    "marketing_spend_per_user":  "Pengeluaran marketing per pelanggan (USD)",
+    "lifetime_value":            "Lifetime Value / LTV pelanggan (USD)",
+    "last_3_month_purchase_freq":"Frekuensi pembelian 3 bulan terakhir",
+    "customer_age_days":         "Lama terdaftar sejak signup (hari)",
+    "days_since_last_purchase":  "Hari sejak pembelian terakhir",
 }
+
+# Nilai encoded dari LabelEncoder — sesuai urutan alfabetis sklearn
+# (sklearn LabelEncoder mengurutkan secara alfabetis)
+COUNTRY_OPTIONS    = {"Australia": 0, "Brazil": 1, "Canada": 2, "Germany": 3, "India": 4, "UK": 5}
+CITY_OPTIONS       = {"Berlin": 0, "Chennai": 1, "London": 2, "Mumbai": 3, "New York": 4, "Sydney": 5, "Toronto": 6}
+ACQ_CHANNEL        = {"Direct": 0, "Email": 1, "Organic": 2, "Paid Ad": 3, "Referral": 4, "Social Media": 5}
+DEVICE_TYPE        = {"Desktop": 0, "Mobile": 1, "Tablet": 2}
+SUBSCRIPTION_TYPE  = {"Free": 0, "Premium": 1}
+COUPON_CODE        = {"BLACKFRIDAY": 0, "NEWYEAR": 1, "None": 2, "SAVE10": 3, "SUMMER": 4, "WELCOME": 5}
+PAYMENT_METHOD     = {"Bank Transfer": 0, "Credit Card": 1, "Debit Card": 2, "PayPal": 3, "UPI": 4}
 
 # ─────────────────────────────────────────────
 # PREDICTION FUNCTION
@@ -108,7 +130,7 @@ with st.sidebar:
 | **Algorithm** | Random Forest |
 | **Dataset** | Sales and Marketing Customer Dataset |
 | **Target** | Churn |
-| **Features** | 20 fitur numerik |
+| **Features** | 27 fitur |
 | **Deployment** | Streamlit Cloud |
 """)
 
@@ -162,78 +184,108 @@ with col1:
     age = st.number_input("Age (tahun)", min_value=18, max_value=100, value=35, step=1,
                           help=FEATURE_INFO["age"])
 
-    is_premium_user = st.selectbox("Is Premium User", options=["Tidak (0)", "Ya (1)"],
-                                   help=FEATURE_INFO["is_premium_user"])
-    is_premium_val = 1 if "Ya" in is_premium_user else 0
+    country_label = st.selectbox("Country", options=list(COUNTRY_OPTIONS.keys()),
+                                 help=FEATURE_INFO["country"])
+    country_val = COUNTRY_OPTIONS[country_label]
 
-    total_visits = st.number_input("Total Visits", min_value=0, max_value=10000, value=50, step=1,
+    city_label = st.selectbox("City", options=list(CITY_OPTIONS.keys()),
+                              help=FEATURE_INFO["city"])
+    city_val = CITY_OPTIONS[city_label]
+
+    acq_label = st.selectbox("Acquisition Channel", options=list(ACQ_CHANNEL.keys()),
+                             help=FEATURE_INFO["acquisition_channel"])
+    acq_val = ACQ_CHANNEL[acq_label]
+
+    device_label = st.selectbox("Device Type", options=list(DEVICE_TYPE.keys()),
+                                help=FEATURE_INFO["device_type"])
+    device_val = DEVICE_TYPE[device_label]
+
+    sub_label = st.selectbox("Subscription Type", options=list(SUBSCRIPTION_TYPE.keys()),
+                             help=FEATURE_INFO["subscription_type"])
+    sub_val = SUBSCRIPTION_TYPE[sub_label]
+
+    is_premium_label = st.selectbox("Is Premium User", options=["Tidak (0)", "Ya (1)"],
+                                    help=FEATURE_INFO["is_premium_user"])
+    is_premium_val = 1 if "Ya" in is_premium_label else 0
+
+    total_visits = st.number_input("Total Visits", min_value=0, max_value=10000, value=15, step=1,
                                    help=FEATURE_INFO["total_visits"])
 
     avg_session_time = st.number_input("Avg Session Time (menit)", min_value=0.0, max_value=300.0,
-                                       value=15.0, step=0.5, format="%.1f",
+                                       value=8.0, step=0.5, format="%.1f",
                                        help=FEATURE_INFO["avg_session_time"])
 
+with col2:
     pages_per_session = st.number_input("Pages per Session", min_value=0.0, max_value=100.0,
-                                        value=5.0, step=0.5, format="%.1f",
+                                        value=4.0, step=0.5, format="%.1f",
                                         help=FEATURE_INFO["pages_per_session"])
 
     email_open_rate = st.number_input("Email Open Rate (0.0 - 1.0)", min_value=0.0, max_value=1.0,
-                                      value=0.3, step=0.01, format="%.2f",
+                                      value=0.5, step=0.01, format="%.2f",
                                       help=FEATURE_INFO["email_open_rate"])
 
     email_click_rate = st.number_input("Email Click Rate (0.0 - 1.0)", min_value=0.0, max_value=1.0,
-                                       value=0.1, step=0.01, format="%.2f",
+                                       value=0.25, step=0.01, format="%.2f",
                                        help=FEATURE_INFO["email_click_rate"])
 
-with col2:
     total_spent = st.number_input("Total Spent (USD)", min_value=0.0, max_value=100000.0,
-                                  value=500.0, step=10.0, format="%.2f",
+                                  value=522.0, step=10.0, format="%.2f",
                                   help=FEATURE_INFO["total_spent"])
 
     avg_order_value = st.number_input("Avg Order Value (USD)", min_value=0.0, max_value=10000.0,
-                                      value=75.0, step=5.0, format="%.2f",
+                                      value=60.0, step=5.0, format="%.2f",
                                       help=FEATURE_INFO["avg_order_value"])
 
-    discount_used = st.number_input("Discount Used", min_value=0, max_value=500, value=5, step=1,
-                                    help=FEATURE_INFO["discount_used"])
+    discount_used_label = st.selectbox("Discount Used", options=["Tidak (0)", "Ya (1)"],
+                                       help=FEATURE_INFO["discount_used"])
+    discount_val = 1 if "Ya" in discount_used_label else 0
+
+    coupon_label = st.selectbox("Coupon Code", options=list(COUPON_CODE.keys()),
+                                help=FEATURE_INFO["coupon_code"])
+    coupon_val = COUPON_CODE[coupon_label]
 
     support_tickets = st.number_input("Support Tickets", min_value=0, max_value=100, value=2, step=1,
                                       help=FEATURE_INFO["support_tickets"])
 
-    refund_requested = st.number_input("Refund Requested", min_value=0, max_value=50, value=0, step=1,
-                                       help=FEATURE_INFO["refund_requested"])
-
-    delivery_delay_days = st.number_input("Delivery Delay Days", min_value=0.0, max_value=60.0,
-                                          value=2.0, step=0.5, format="%.1f",
-                                          help=FEATURE_INFO["delivery_delay_days"])
-
-    satisfaction_score = st.number_input("Satisfaction Score (1 - 5)", min_value=1.0, max_value=5.0,
-                                         value=3.5, step=0.1, format="%.1f",
-                                         help=FEATURE_INFO["satisfaction_score"])
+    refund_label = st.selectbox("Refund Requested", options=["Tidak (0)", "Ya (1)"],
+                                help=FEATURE_INFO["refund_requested"])
+    refund_val = 1 if "Ya" in refund_label else 0
 
 with col3:
-    nps_score = st.number_input("NPS Score (-100 - 100)", min_value=-100, max_value=100,
-                                value=20, step=1, help=FEATURE_INFO["nps_score"])
+    delivery_delay_days = st.number_input("Delivery Delay Days", min_value=0.0, max_value=60.0,
+                                          value=3.0, step=0.5, format="%.1f",
+                                          help=FEATURE_INFO["delivery_delay_days"])
+
+    payment_label = st.selectbox("Payment Method", options=list(PAYMENT_METHOD.keys()),
+                                 help=FEATURE_INFO["payment_method"])
+    payment_val = PAYMENT_METHOD[payment_label]
+
+    satisfaction_score = st.number_input("Satisfaction Score (1 - 5)", min_value=1.0, max_value=5.0,
+                                         value=3.6, step=0.1, format="%.1f",
+                                         help=FEATURE_INFO["satisfaction_score"])
+
+    nps_score = st.number_input("NPS Score (1 - 10)", min_value=1, max_value=10,
+                                value=5, step=1, help=FEATURE_INFO["nps_score"])
 
     marketing_spend_per_user = st.number_input("Marketing Spend per User (USD)", min_value=0.0,
-                                               max_value=5000.0, value=50.0, step=1.0,
+                                               max_value=5000.0, value=17.5, step=1.0,
                                                format="%.2f",
                                                help=FEATURE_INFO["marketing_spend_per_user"])
 
     lifetime_value = st.number_input("Lifetime Value / LTV (USD)", min_value=0.0,
-                                     max_value=100000.0, value=1000.0, step=50.0,
+                                     max_value=100000.0, value=1233.0, step=50.0,
                                      format="%.2f", help=FEATURE_INFO["lifetime_value"])
 
     last_3_month_purchase_freq = st.number_input("Last 3 Month Purchase Freq", min_value=0,
-                                                 max_value=200, value=5, step=1,
+                                                 max_value=200, value=7, step=1,
                                                  help=FEATURE_INFO["last_3_month_purchase_freq"])
 
     customer_age_days = st.number_input("Customer Age (hari sejak signup)", min_value=0,
-                                        max_value=5000, value=365, step=1,
+                                        max_value=50000, value=365, step=1,
                                         help=FEATURE_INFO["customer_age_days"])
 
     days_since_last_purchase = st.number_input("Days Since Last Purchase", min_value=0,
-                                               max_value=1000, value=30, step=1,
+                                               max_value=50000, value=30, step=1,
                                                help=FEATURE_INFO["days_since_last_purchase"])
 
 st.divider()
@@ -247,6 +299,11 @@ if predict_btn:
     input_data = pd.DataFrame(
         [[
             age,
+            country_val,
+            city_val,
+            acq_val,
+            device_val,
+            sub_val,
             is_premium_val,
             total_visits,
             avg_session_time,
@@ -255,10 +312,12 @@ if predict_btn:
             email_click_rate,
             total_spent,
             avg_order_value,
-            discount_used,
+            discount_val,
+            coupon_val,
             support_tickets,
-            refund_requested,
+            refund_val,
             delivery_delay_days,
+            payment_val,
             satisfaction_score,
             nps_score,
             marketing_spend_per_user,
