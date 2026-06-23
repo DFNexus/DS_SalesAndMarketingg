@@ -122,19 +122,7 @@ def get_confidence_label(prob: float) -> str:
 # ─────────────────────────────────────────────
 # SIDEBAR
 # ─────────────────────────────────────────────
-with st.sidebar:
-    try:
-        model_sidebar = load_model()
-        if hasattr(model_sidebar, "feature_importances_"):
-            st.header("Feature Importance")
-            importances = model_sidebar.feature_importances_
-            fi_df = pd.DataFrame({
-                "Feature": FEATURE_COLUMNS,
-                "Importance": importances,
-            }).sort_values("Importance", ascending=True)
-            st.bar_chart(fi_df.set_index("Feature"))
-    except Exception:
-        pass
+
 
 # ─────────────────────────────────────────────
 # MAIN UI
