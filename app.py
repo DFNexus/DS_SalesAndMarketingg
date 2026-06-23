@@ -45,30 +45,30 @@ st.divider()
 # Sidebar
 # 
 with st.sidebar:
-    st.header(" Konfigurasi")
-    uploaded_file = st.file_uploader(" Upload Dataset CSV", type=["csv"])
+    st.header("Konfigurasi")
     st.divider()
     st.markdown("""
 **Panduan Penggunaan:**
-1.  Upload file CSV dataset
-2.  Eksplorasi data di tab **EDA**
-3.  Jalankan **Direct Modeling**
-4.  Coba **Preprocessing + Modeling**
-5.  Lihat **Feature Selection** & simpan model
+1. Eksplorasi data di tab **EDA**
+2. Jalankan **Direct Modeling**
+3. Coba **Preprocessing + Modeling**
+4. Lihat **Feature Selection** & simpan model
 """)
-
-if uploaded_file is None:
-    st.info(" Silakan upload file CSV dataset pelanggan di sidebar untuk memulai analisis.")
-    st.stop()
 
 # 
 # Load data
 # 
-@st.cache_data
-def load_data(file):
-    return pd.read_csv(file)
+DATASET_PATH = "Sales - Marketing customer dataset.csv"
 
-df_raw = load_data(uploaded_file)
+@st.cache_data
+def load_data(path):
+    return pd.read_csv(path)
+
+try:
+    df_raw = load_data(DATASET_PATH)
+except FileNotFoundError:
+    st.error(f"File '{DATASET_PATH}' tidak ditemukan. Pastikan file berada di direktori yang sama dengan app.py.")
+    st.stop()
 
 if "churn" not in df_raw.columns:
     st.error(" Kolom 'churn' tidak ditemukan. Pastikan dataset memiliki kolom target 'churn'.")
