@@ -123,24 +123,6 @@ def get_confidence_label(prob: float) -> str:
 # SIDEBAR
 # ─────────────────────────────────────────────
 with st.sidebar:
-    st.header("Model Information")
-    st.markdown("""
-| Field | Detail |
-|---|---|
-| **Algorithm** | Random Forest |
-| **Dataset** | Sales and Marketing Customer Dataset |
-| **Target** | Churn |
-| **Features** | 27 fitur |
-| **Deployment** | Streamlit Cloud |
-""")
-
-    st.divider()
-    st.header("Feature Information")
-    for feat, desc in FEATURE_INFO.items():
-        st.markdown(f"**{feat}**  \n{desc}")
-
-    st.divider()
-
     try:
         model_sidebar = load_model()
         if hasattr(model_sidebar, "feature_importances_"):
